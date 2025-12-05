@@ -1,0 +1,71 @@
+<?php
+/**
+ * @file
+ * Groq provider integration for the OpenAI module.
+ */
+
+/**
+ * Implements hook_autoload_info().
+ */
+function openai_groq_autoload_info() {
+  return [
+    'GroqAdapter' => 'includes/GroqAdapter.php',
+  ];
+}
+
+/**
+ * Implements hook_openai_provider_info().
+ */
+function openai_groq_openai_provider_info() {
+  return [
+    'groq' => [
+      'label' => t('Groq'),
+      'description' => t('Groq API (OpenAI-compatible, ultra-fast inference for Llama, Mixtral, Gemma, and more).'),
+      'class' => 'GroqAdapter',
+      'website' => 'https://console.groq.com/',
+      'key_url' => 'https://console.groq.com/keys',
+      'models_url' => 'https://console.groq.com/models',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_openai_provider_settings_alter().
+ */
+function openai_groq_openai_provider_settings_alter(&$settings, $context) {
+  if ($context['provider'] !== 'groq') {
+    return;
+  }
+
+  $available_keys = function_exists('key_get_key_names_as_options') ? key_get_key_names_as_options() : [];
+
+  $settings['api_key_groq'] = [
+    '#type' => 'key_select',
+    '#title' => t('Groq API Key'),
+    '#default_value' => config_get('openai.settings', 'api_key_groq') ?: '',
+    '#options' => $available_keys,
+    '#key_filters' => ['type' => 'authentication'],
+    // Use direct string for URL to avoid t() file resolution warning
+    '#description' => t('Get your API key from <a href="https://console.groq.com/keys" target="_blank">https://console.groq.com/keys</a>.'),
+    '#weight' => -5,
+  ];
+
+  $settings['models_link'] = [
+    '#type' => 'markup',
+    // Use direct string for URL to avoid t() file resolution warning
+    '#markup' => '<p><strong><a href="https://console.groq.com/models" target="_blank">See available Groq models &raquo;</a></strong></p>',
+    '#weight' => -4,
+  ];
+
+  if (isset($context['form'])) {
+    $context['form']['#submit'][] = 'openai_groq_provider_settings_submit';
+  }
+}
+
+/**
+ * Submit handler for Groq provider settings.
+ */
+function openai_groq_provider_settings_submit($form, &$form_state) {
+  // Placeholder for any provider-specific config that needs custom handling.
+  // The main OpenAI settings handler already saves api_key_groq.
+}

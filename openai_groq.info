@@ -1,0 +1,6 @@
+name = OpenAI Groq
+backdrop = 1.x
+description = Integrates Groq API with the OpenAI module (OpenAI-compatible LLM API)
+package = OpenAI
+dependencies[] = openai
+
