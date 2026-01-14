@@ -4,5 +4,6 @@ description = Integrates Groq API with the OpenAI module (OpenAI-compatible LLM 
 package = OpenAI
 type = module
 dependencies[] = openai
+dependencies[] = groq
 
 
