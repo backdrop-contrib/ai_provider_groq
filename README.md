@@ -1,6 +1,6 @@
-# OpenAI Groq
+# AI Provider Groq
 
-Groq provider for the Backdrop CMS OpenAI module.
+Groq provider for the Backdrop CMS AI module.
 
 ## Installation
 
@@ -8,7 +8,7 @@ Groq provider for the Backdrop CMS OpenAI module.
 
 ## Issues
 
-Bugs and feature requests should be reported in the [Issue Queue](https://github.com/backdrop-contrib/openai_groq/issues).
+Bugs and feature requests should be reported in the [Issue Queue](https://github.com/backdrop-contrib/ai_provider_groq/issues).
 
 ## Current Maintainer
 
@@ -18,7 +18,8 @@ Bugs and feature requests should be reported in the [Issue Queue](https://github
 
 - Created for Backdrop CMS by [Justin Keiser](https://github.com/keiserjb).
 
+- Developed with AI assistance.
+
 ## License
 
 This project is GPL v2 software. See the LICENSE.txt file in this directory for complete text.
-

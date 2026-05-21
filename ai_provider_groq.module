@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * @file
+ * Groq provider for AI core.
+ */
+
+/**
+ * Implements hook_autoload_info().
+ */
+function ai_provider_groq_autoload_info() {
+  return [
+    'AIGroqAdapter' => 'includes/AIGroqAdapter.php',
+  ];
+}
+
+/**
+ * Implements hook_ai_provider_info().
+ */
+function ai_provider_groq_ai_provider_info() {
+  return [
+    'groq' => [
+      'label' => t('Groq'),
+      'description' => t('Groq API with chat and completion endpoints compatible with the shared AI adapter contract.'),
+      'class' => 'AIGroqAdapter',
+      'website' => 'https://console.groq.com/',
+      'key_url' => 'https://console.groq.com/keys',
+      'models_url' => 'https://console.groq.com/models',
+    ],
+  ];
+}
