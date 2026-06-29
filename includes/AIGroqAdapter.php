@@ -108,6 +108,9 @@ class AIGroqAdapter extends AIAdapterBase {
       }
 
       if ($stream_response) {
+        // Without stream=true the API returns one JSON object, which the
+        // SSE line parser silently discards.
+        $payload['stream'] = TRUE;
         return $this->buildStreamingResponse($this->baseUrl . '/completions', [
           'method' => 'POST',
           'headers' => array_merge([
@@ -121,7 +124,7 @@ class AIGroqAdapter extends AIAdapterBase {
         });
       }
 
-      $result = $this->makeRequest($this->baseUrl . '/completions', $payload);
+      $result = $this->makeRequest($this->baseUrl . '/completions', $payload, [], 'POST', 300);
       return trim($result['choices'][0]['text'] ?? $result['choices'][0]['message']['content'] ?? '');
     }
     catch (\Exception $e) {
@@ -145,6 +148,9 @@ class AIGroqAdapter extends AIAdapterBase {
       }
 
       if ($stream_response) {
+        // Without stream=true the API returns one JSON object, which the
+        // SSE line parser silently discards.
+        $payload['stream'] = TRUE;
         return $this->buildStreamingResponse($this->baseUrl . '/chat/completions', [
           'method' => 'POST',
           'headers' => array_merge([
@@ -158,7 +164,9 @@ class AIGroqAdapter extends AIAdapterBase {
         });
       }
 
-      $result = $this->makeRequest($this->baseUrl . '/chat/completions', $payload);
+      // Long generations can exceed the 30s makeRequest() default; match the
+      // 300s the streaming path uses.
+      $result = $this->makeRequest($this->baseUrl . '/chat/completions', $payload, [], 'POST', 300);
       return trim($result['choices'][0]['message']['content'] ?? $result['choices'][0]['text'] ?? '');
     }
     catch (\Exception $e) {
@@ -223,7 +231,7 @@ class AIGroqAdapter extends AIAdapterBase {
         $payload['max_tokens'] = (int) $max_tokens;
       }
 
-      $result = $this->makeRequest($this->baseUrl . '/chat/completions', $payload);
+      $result = $this->makeRequest($this->baseUrl . '/chat/completions', $payload, [], 'POST', 300);
       return $this->normalizeToolResponse($result);
     }
     catch (\Exception $e) {
