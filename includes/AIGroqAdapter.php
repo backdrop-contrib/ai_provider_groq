@@ -16,6 +16,9 @@ class AIGroqAdapter extends AIAdapterBase {
    */
   protected $baseUrl = 'https://api.groq.com/openai/v1';
 
+  /** @var array|null Catalog reused across capability lookups. */
+  protected $models;
+
   /**
    * {@inheritdoc}
    */
@@ -29,6 +32,9 @@ class AIGroqAdapter extends AIAdapterBase {
    * {@inheritdoc}
    */
   public function getModels(): array {
+    if ($this->models !== NULL) {
+      return $this->models;
+    }
     $models = [];
 
     try {
@@ -57,7 +63,7 @@ class AIGroqAdapter extends AIAdapterBase {
     }
 
     asort($models);
-    return $models;
+    return $this->models = $models;
   }
 
   /**
@@ -65,6 +71,7 @@ class AIGroqAdapter extends AIAdapterBase {
    */
   public function getModelsByCapability($capability): array {
     $models = $this->getModels();
+    $capability = ai_normalize_capability_name($capability);
     $filtered = [];
 
     foreach ($models as $id => $label) {
@@ -72,13 +79,30 @@ class AIGroqAdapter extends AIAdapterBase {
       switch ($capability) {
         case 'text':
         case 'chat':
-          $ok = TRUE;
+          // Groq's catalog has no operation flags. Exclude known non-chat
+          // families; ambiguous assignments can be set in the shared UI.
+          $ok = !preg_match('/whisper|tts|orpheus|playai|embed|guard|safeguard/i', $id);
+          break;
+
+        case 'tool_calling':
+          $ok = (bool) preg_match('/(llama-3\.[13]|mixtral|qwen)/i', $id);
+          break;
+
+        case 'thinking':
+          $ok = (bool) preg_match('/(r1|reason|thinking)/i', $id);
+          break;
+
+        case 'vision':
+          $ok = (bool) preg_match('/vision/i', $id);
+          break;
+
+        case 'stt':
+          $ok = (bool) preg_match('/whisper/i', $id);
           break;
 
         case 'embeddings':
         case 'embedding':
         case 'image':
-        case 'vision':
         case 'moderation':
           $ok = FALSE;
           break;
@@ -147,6 +171,23 @@ class AIGroqAdapter extends AIAdapterBase {
         $payload['max_tokens'] = (int) $max_tokens;
       }
 
+      if (!empty($context_extra['response_format'])) {
+        $payload['response_format'] = $context_extra['response_format'];
+      }
+      elseif (!empty($context_extra['json_schema'])) {
+        $payload['response_format'] = [
+          'type' => 'json_schema',
+          'json_schema' => [
+            'name' => $context_extra['json_schema_name'] ?? 'response',
+            'strict' => TRUE,
+            'schema' => $context_extra['json_schema'],
+          ],
+        ];
+      }
+      elseif (!empty($context_extra['json_mode'])) {
+        $payload['response_format'] = ['type' => 'json_object'];
+      }
+
       if ($stream_response) {
         // Without stream=true the API returns one JSON object, which the
         // SSE line parser silently discards.
@@ -195,8 +236,25 @@ class AIGroqAdapter extends AIAdapterBase {
    * {@inheritdoc}
    */
   public function speechToText(string $model, string $file, string $task = 'transcribe', $temperature = 0.4, string $response_format = 'verbose_json') {
-    watchdog('ai_provider_groq', 'Speech-to-text is not supported by Groq.', [], WATCHDOG_WARNING);
-    throw new \RuntimeException('Speech-to-text is not supported by Groq.');
+    if (!in_array($task, ['transcribe', 'translate'], TRUE)) {
+      throw new \InvalidArgumentException('Task must be transcribe or translate.');
+    }
+
+    try {
+      $endpoint = ($task === 'translate') ? '/audio/translations' : '/audio/transcriptions';
+      $result = $this->makeMultipartRequest($this->baseUrl . $endpoint, [
+        'model' => $model,
+        'file' => ['path' => $file, 'name' => 'file'],
+        'temperature' => (float) $temperature,
+        'response_format' => $response_format,
+      ], 300);
+
+      return $result['text'] ?? '';
+    }
+    catch (\Exception $e) {
+      watchdog('ai_provider_groq', 'Groq STT error: @message', ['@message' => $e->getMessage()], WATCHDOG_ERROR);
+      throw $e;
+    }
   }
 
   /**
@@ -229,6 +287,23 @@ class AIGroqAdapter extends AIAdapterBase {
       ];
       if ((int) $max_tokens > 0) {
         $payload['max_tokens'] = (int) $max_tokens;
+      }
+
+      if (!empty($context_extra['response_format'])) {
+        $payload['response_format'] = $context_extra['response_format'];
+      }
+      elseif (!empty($context_extra['json_schema'])) {
+        $payload['response_format'] = [
+          'type' => 'json_schema',
+          'json_schema' => [
+            'name' => $context_extra['json_schema_name'] ?? 'response',
+            'strict' => TRUE,
+            'schema' => $context_extra['json_schema'],
+          ],
+        ];
+      }
+      elseif (!empty($context_extra['json_mode'])) {
+        $payload['response_format'] = ['type' => 'json_object'];
       }
 
       $result = $this->makeRequest($this->baseUrl . '/chat/completions', $payload, [], 'POST', 300);
