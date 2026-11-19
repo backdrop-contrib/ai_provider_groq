@@ -1,10 +1,12 @@
 # AI Provider Groq
 
-Groq provider for the Backdrop CMS AI module.
+Use Groq-hosted models in Backdrop for chat or convert recorded speech to text with Whisper. Compatible chat models can also accept images or call tools.
 
 ## Installation
 
-- Install this module using the official [Backdrop CMS instructions](https://backdropcms.org/user-guide/modules).
+Install and enable this module with AI and Key. [Backdrop module installation guide](https://backdropcms.org/user-guide/modules)
+
+Store your service credentials using the Key module. Choose the provider in **Configuration → AI → Settings → Providers**. [Setup and troubleshooting](https://github.com/backdrop-contrib/ai_provider_groq/wiki)
 
 ## Issues
 
